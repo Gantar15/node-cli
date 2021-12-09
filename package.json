@@ -7,7 +7,7 @@
     "compile": "npx tsc",
     "watch": "npx tsc --watch",
     "dev": "node ./dist/index.js",
-    "start": "npx tsc & node ./dist/index.js"
+    "start": "npx tsc & node ./dist/index.js -name valera_admin -password admin"
   },
   "keywords": [],
   "author": "",
