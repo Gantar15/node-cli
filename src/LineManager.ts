@@ -13,7 +13,7 @@ export default class LineManager {
         this.line = readline.createInterface({
             input: process.stdin,
             output: process.stdout,
-            prompt: `baboc${name}>`,
+            prompt: `baboc->{${name}}>`,
             historySize: 20
         });
         this.promptStart();
@@ -24,8 +24,16 @@ export default class LineManager {
         })
         
         this.line.on('SIGINT', () => {
-            console.log('\ncli out');
-            this.line.close();
+            const askEnd = () => this.ask("Are you sure you want to exit from this excellent cli (y-yes, n-no) ? ", resp => {
+                if(resp.match(/^yes|y$/i)) {
+                    console.log('\nCli exit -_-');
+                    this.line.close();
+                    process.exit(2);
+                };
+                if(resp.match(/^no|n$/i)) return;
+                else askEnd();
+            });
+            askEnd();
         });
     }
 
