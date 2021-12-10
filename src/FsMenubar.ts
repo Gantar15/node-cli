@@ -5,10 +5,19 @@ import stoper from './stoper';
 
 
 export default class FsMenubar{
-    protected readonly path; 
+    readonly path: string; 
+    isFile!: boolean;
+    isDirectory!: boolean;
 
     constructor(path: string){
         this.path = path;
+        
+        fs.stat(this.path, (err, stat) => {
+            if(!err) {
+                this.isDirectory = stat.isDirectory();
+                this.isFile = stat.isFile();
+            }
+        });
     }
 
     checkExist(){
@@ -17,12 +26,13 @@ export default class FsMenubar{
         });
     }
 
-    write(data: string, endHandle: () => void){
-        this.checkExist();
-
+    write(data: string, endHandle?: () => void){
+        if(!this.path.match(/^.*\..+$/))
+            stoper("You must pass the path to the file", 9);
+            
         const gzip = zlib.createGzip();
         const writeStream = fs.createWriteStream(this.path, {
-            start: 0
+            flags: 'a'
         });
 
         Stream.pipeline(
@@ -37,33 +47,63 @@ export default class FsMenubar{
         );
     }
 
-    read(endHandle: (data: string) => void){
+    read(endHandle?: (data: string) => void){
         this.checkExist();
 
-        const readStream = fs.createReadStream(this.path);
-        readStream.on('data', data => {
-            zlib.unzip(data, (err, result) => {
-                if(err) stoper(err.message, 2);
-                endHandle(result.toString('utf8'));
+        if(this.isFile){
+            const readStream = fs.createReadStream(this.path);
+            readStream.on('data', data => {
+                zlib.unzip(data, (err, result) => {
+                    if(err) {
+                        endHandle ? endHandle(data.toString('utf8')) : null;
+                        return;
+                    }
+                    endHandle ? endHandle(result.toString('utf8')) : null;
+                });
+            })
+        }
+        else if(this.isDirectory){
+            fs.readdir(this.path, {
+                encoding: 'utf8',
+                withFileTypes: true
+            }, (err, files) => {
+                if(err)
+                    stoper(`Cannot read dir ${this.path} -_-`, 2);
+
+                const filenames = files.reduce((str, file) => str + ", " + file.name, '').slice(2);
+                endHandle ? endHandle(filenames) : null;
             });
-        })
+        }
     }
 
-    create(endHandle: () => void){
-        fs.createWriteStream(this.path);
+    create(endHandle?: () => void){
+        if(this.path.match(/^.*\..+$/)){
+            fs.createWriteStream(this.path);
+            endHandle ? endHandle() : null;
+        }
+        else{
+            fs.mkdir(this.path, {
+                recursive: true
+            }, err => {
+                if(err)
+                    stoper(err.message, 2);
+            });
+        }
+        endHandle ? endHandle() : null;
     }
 
-    remove(endHandle: () => void){
-        this.checkExist();
-
-        fs.rm(this.path, {force: true}, err => err);
-        endHandle();
+    remove(endHandle?: Function){
+        fs.rm(this.path, {recursive: true}, err => {
+            if(err)
+                stoper(err.message, 9);
+        });
+        endHandle ? endHandle() : null;
     }
 
-    watch(changeHandle: (type: string ,data: string) => void, endHandle: () => void){
+    watch(changeHandle: (type: string, data: string) => void, endHandle?: Function){
         this.checkExist();
 
         fs.watch(this.path, {recursive: true}, changeHandle);
-        endHandle();
+        endHandle ? endHandle() : null;
     }
 }

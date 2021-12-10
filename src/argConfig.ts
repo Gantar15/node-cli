@@ -1,4 +1,5 @@
-import required_args from './required_args.json';
+import required_args from './store/required_args.json';
+import users from './store/users.json';
 import stoper from './stoper';
 
 
@@ -17,7 +18,7 @@ const validateArgs = (args: string[]) : configType | null => {
     return config;
 };
 
-const argConfig = (name: string, password: string) => {
+const argConfig = () => {
     const args = process.argv.slice(2);
 
     const config = validateArgs(args);
@@ -25,8 +26,14 @@ const argConfig = (name: string, password: string) => {
         stoper("You forgot point necessary argument", 9);
     }
 
-    if(config!['-name'] != name || config!['-password'] != password){
+    const writenName = config!['-name'];
+    const writenPassword = config!['-password'];
+
+    //@ts-expect-error
+    if(users[writenName] != writenPassword){
         stoper("Wrong name or password :3", 9);
     }
+
+    return [writenName, writenPassword];
 };
 export default argConfig;

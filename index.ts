@@ -6,16 +6,12 @@ import fs from 'fs';
 
 
 function start(){
-    const name = "valera_admin";
-    const password = "admin";
-
     try{
-        argConfig(name, password);
+        const [name, password] = argConfig();
         
         const lineManager = new LineManager(name);
         
-        const startMenu = () => lineManager.ask('Write path to potential file: ', path => {
-
+        const startMenu = () => lineManager.ask('Write path: ', path => {
             const menu = new FsMenubar(path);
             const operations = ['create', 'read', 'write', 'remove', 'watch'];
 
@@ -24,30 +20,37 @@ function start(){
                 if(selected && selected >= 1 && selected <= 4){
                     switch(selected){
                         case 1:
-                            menu.create(() => startMenu());
+                            menu.create(() => {
+                                lineManager.writeLine('Success');
+                            });
                             break;
                         case 2:
                             menu.read(data => {
-                                lineManager.write(data);
-                                startMenu();
+                                lineManager.writeLine(data);
                             });
                             break;
                         case 3:
                             lineManager.ask("Write some data: ", data => 
-                            menu.write(data, () => startMenu()));
+                            menu.write(data, () => {
+                                lineManager.writeLine('Success');
+                            }));
                             break;
                         case 4:
-                            menu.remove(() => startMenu());
+                            menu.remove(() => {
+                                lineManager.writeLine('Success');
+                            });
                             break;
                         case 5:
-                            menu.watch((type, data) => lineManager.write(data),
-                                () => startMenu());
+                            menu.watch(
+                                (type, data) => {
+                                    lineManager.writeLine(`type: ${type}, data: ${data}`);
+                                }
+                            );
                             break;
-                        default:
-                            startMenu();
                     }
                 }
             };
+
             lineManager.ask(`
                 Select something
                     1) ${operations[0]}
@@ -57,10 +60,14 @@ function start(){
                     5) ${operations[4]}
             `, fsMenubarHandler);
         });
-        startMenu();
+
+        lineManager.write('To invoke menu write -m\n');
+        lineManager.on('line', msg => {
+            if(msg == '-m') startMenu();
+        });
     }
     catch(err: any){
-        stoper("Uncknown error", 2);
+        stoper(err, 2);
     }
 }
 start();

@@ -1,8 +1,9 @@
 import readline from 'readline';
 import fs from 'fs';
+import EventEmitter from 'events';
 
 
-export default class LineManager {
+export default class LineManager extends EventEmitter{
     protected readonly line: readline.Interface;
 
     protected promptStart(){
@@ -10,6 +11,7 @@ export default class LineManager {
     }
 
     constructor(name: string, onLine?: (line: string) => void){
+        super();
         this.line = readline.createInterface({
             input: process.stdin,
             output: process.stdout,
@@ -19,6 +21,7 @@ export default class LineManager {
         this.promptStart();
         
         this.line.on('line', msg => {
+            this.emit('line', msg);
             onLine ? onLine(msg) : void 0;
             this.promptStart();
         })
@@ -39,6 +42,11 @@ export default class LineManager {
 
     write(msg: string | Buffer){
         this.line.write(msg);
+        this.promptStart();
+    }
+
+    writeLine(msg: string | Buffer){
+        this.line.write(msg+'\n');
         this.promptStart();
     }
 
